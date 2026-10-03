@@ -69,14 +69,23 @@ jobs:
           cache-dependency-path: services/server/go.sum
       - run: go test ./...
       - run: go run ./cmd/demo
-      - run: go run ./cmd/migrate up
+      # Each package resets whole tables; never share fixture databases across packages.
+      - name: Middleware integration tests with isolated databases
         env:
-          MYSQL_DSN: root:local-ci-only@tcp(127.0.0.1:3306)/novelstudio?parseTime=true&loc=UTC
-      - run: go test ./internal/turnjobs ./internal/worlddrafts ./internal/reports -run 'TestMySQL(TurnJob|WorldDraft|Report)Lifecycle' -v
-        env:
-          MYSQL_TEST_DSN: root:local-ci-only@tcp(127.0.0.1:3306)/novelstudio?parseTime=true&loc=UTC&time_zone=%27%2B00%3A00%27
-      - run: go test -p 1 ./internal/auth ./internal/messaging ./internal/worlds -v
-        env:
-          MYSQL_TEST_DSN: root:local-ci-only@tcp(127.0.0.1:3306)/novelstudio?parseTime=true&loc=UTC&time_zone=%27%2B00%3A00%27
+          MYSQL_CONTAINER: ${{ job.services.mysql.id }}
           REDIS_TEST_ADDR: 127.0.0.1:6379
           RABBITMQ_TEST_URL: amqp://guest:guest@127.0.0.1:5672/
+        run: |
+          for package in turnjobs worlddrafts reports auth messaging worlds; do
+            database="novelstudio_${package}"
+            docker exec "$MYSQL_CONTAINER" mysql -uroot -plocal-ci-only \
+              -e "CREATE DATABASE ${database};"
+            export MYSQL_TEST_DSN="root:local-ci-only@tcp(127.0.0.1:3306)/${database}?parseTime=true&loc=UTC&time_zone=%27%2B00%3A00%27"
+            MYSQL_DSN="$MYSQL_TEST_DSN" go run ./cmd/migrate up
+            args=()
+            case "$package" in
+              turnjobs|worlddrafts|reports)
+                args=(-run 'TestMySQL(TurnJob|WorldDraft|Report)Lifecycle') ;;
+            esac
+            go test -p 1 "./internal/${package}" "${args[@]}" -v
+          done
