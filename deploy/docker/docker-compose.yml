@@ -1,0 +1,95 @@
+name: novelstudio
+
+services:
+  api:
+    image: novelstudio-server:latest
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.server
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      API_ADDR: ":8080"
+      AUTH_SESSION_DIGEST_KEY: ${AUTH_SESSION_DIGEST_KEY}
+      AUTH_RECOVERY_PEPPER: ${AUTH_RECOVERY_PEPPER}
+      MYSQL_DSN: ${MYSQL_DSN}
+      REDIS_ADDR: ${REDIS_ADDR}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
+      TURNSTILE_DEV_TOKEN: ${TURNSTILE_DEV_TOKEN}
+      REGISTRATION_INITIAL_LIGHT: ${REGISTRATION_INITIAL_LIGHT}
+      SMTP_ADDR: ${SMTP_ADDR}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      COVER_DIR: /app/covers
+      COVER_MODEL: ${COVER_MODEL}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      TEST_MODEL_BASE_URL: ${TEST_MODEL_BASE_URL}
+      TEST_MODEL_API_KEY: ${TEST_MODEL_API_KEY}
+      TEST_MODEL_NAME: ${TEST_MODEL_NAME}
+      TEST_MODEL_BASE_URL_FALLBACK: ${TEST_MODEL_BASE_URL_FALLBACK}
+      TEST_MODEL_API_KEY_FALLBACK: ${TEST_MODEL_API_KEY_FALLBACK}
+      TEST_MODEL_NAME_FALLBACK: ${TEST_MODEL_NAME_FALLBACK}
+      TEXT_CREDITS_BASE: ${TEXT_CREDITS_BASE}
+      ADMIN_ACCOUNT_NAMES: ${ADMIN_ACCOUNT_NAMES}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE}
+      SESSION_COOKIE_LIFETIME_HOURS: ${SESSION_COOKIE_LIFETIME_HOURS}
+    depends_on: []
+    expose:
+      - "8080"
+
+  worker:
+    image: novelstudio-server:latest
+    restart: unless-stopped
+    command: ["/app/worker"]
+    environment:
+      APP_ENV: production
+      MODEL_PROVIDER: ${MODEL_PROVIDER}
+      MYSQL_DSN: ${MYSQL_DSN}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      TEST_MODEL_BASE_URL: ${TEST_MODEL_BASE_URL}
+      TEST_MODEL_API_KEY: ${TEST_MODEL_API_KEY}
+      TEST_MODEL_NAME: ${TEST_MODEL_NAME}
+      TEST_MODEL_BASE_URL_FALLBACK: ${TEST_MODEL_BASE_URL_FALLBACK}
+      TEST_MODEL_API_KEY_FALLBACK: ${TEST_MODEL_API_KEY_FALLBACK}
+      TEST_MODEL_NAME_FALLBACK: ${TEST_MODEL_NAME_FALLBACK}
+
+  migrate:
+    image: novelstudio-server:latest
+    restart: "no"
+    command: ["/app/migrate", "up"]
+    environment:
+      MYSQL_DSN: ${MYSQL_DSN}
+
+  web:
+    image: novelstudio-web:latest
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOSTNAME: "0.0.0.0"
+      PORT: "3000"
+      API_PROXY_TARGET: http://api:8080
+    expose:
+      - "3000"
+    depends_on:
+      - api
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-80}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+      - api

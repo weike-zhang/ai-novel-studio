@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 160" role="img" aria-labelledby="title desc">
+  <title id="title">AI 小说创作台横版 Logo</title>
+  <desc id="desc">几何入口品牌图形与AI 小说创作台中文名称的横向组合。</desc>
+  <g transform="translate(12 12) scale(.5)">
+    <path fill="#20282B" d="M36 40 112 82v92l-76 42V40Z"/>
+    <path fill="#20282B" d="m220 58-76 42v56l76 42V58Z"/>
+    <rect x="124" y="124" width="10" height="10" rx="2" fill="#B6694F"/>
+  </g>
+  <text x="156" y="105" fill="#20282B" font-family="PingFang SC, Noto Sans CJK SC, Microsoft YaHei, sans-serif" font-size="64" font-weight="600" letter-spacing="0">AI 小说创作台</text>
+</svg>

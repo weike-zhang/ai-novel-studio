@@ -1,0 +1,55 @@
+.journey-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--jj-space-2);
+}
+
+.journey-list-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--jj-space-3);
+  padding: var(--jj-space-4);
+  border: 1px solid var(--jj-color-border-subtle);
+  border-radius: var(--jj-radius-card);
+  background: var(--jj-color-surface-default);
+  box-shadow: var(--jj-shadow-hairline);
+  transition: transform var(--jj-motion-fast) var(--jj-motion-easing), box-shadow var(--jj-motion-fast) var(--jj-motion-easing);
+}
+
+.journey-list-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--jj-shadow-surface);
+}
+
+.journey-list-mark {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--jj-radius-card);
+  background: var(--jj-color-brand-rust-soft);
+}
+.journey-list-mark img { width: 100%; height: 100%; object-fit: cover; }
+
+.journey-list-body strong {
+  display: block;
+  margin-bottom: var(--jj-space-1);
+  font-size: var(--jj-size-body-large);
+}
+
+.journey-list-body p {
+  margin: 0;
+  color: var(--jj-color-text-secondary);
+  font-size: var(--jj-size-label);
+}
+
+@media (max-width: 860px) {
+  .journey-list-card {
+    grid-template-columns: auto 1fr;
+  }
+}

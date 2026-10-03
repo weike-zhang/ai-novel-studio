@@ -1,0 +1,18 @@
+# AI 小说创作台 API 服务镜像
+FROM golang:1.26 AS build
+WORKDIR /src
+ENV GOPROXY=https://goproxy.cn,direct
+COPY services/server/go.mod services/server/go.sum ./
+RUN go mod download
+COPY services/server/ ./
+RUN CGO_ENABLED=0 go build -o /out/api ./cmd/api && \
+    CGO_ENABLED=0 go build -o /out/worker ./cmd/worker && \
+    CGO_ENABLED=0 go build -o /out/migrate ./cmd/migrate
+
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates tzdata
+WORKDIR /app
+COPY --from=build /out/api /out/worker /out/migrate ./
+COPY services/server/db/migrations ./db/migrations
+EXPOSE 8080
+CMD ["/app/api"]

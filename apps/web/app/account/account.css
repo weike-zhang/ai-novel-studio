@@ -1,0 +1,135 @@
+/* 账户页 */
+.account-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--jj-space-3);
+  padding: var(--jj-space-3);
+  margin-bottom: var(--jj-space-4);
+  border: 1px solid var(--jj-color-border-subtle);
+  border-radius: var(--jj-radius-card);
+  background: var(--jj-color-surface-default);
+  box-shadow: var(--jj-shadow-hairline);
+}
+
+.account-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--jj-radius-pill);
+  background: var(--jj-color-brand-rust-soft);
+  color: var(--jj-color-brand-rust);
+  font-size: var(--jj-size-body-large);
+  font-weight: var(--jj-weight-semibold);
+}
+
+.account-identity-body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: var(--jj-space-1);
+}
+
+.account-identity-body strong {
+  font-size: var(--jj-size-body-large);
+}
+
+.account-identity-body span {
+  color: var(--jj-color-text-secondary);
+  font-size: var(--jj-size-label);
+}
+
+.account-identity-balance {
+  flex-shrink: 0;
+}
+
+.account-checkin {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--jj-space-3);
+  padding: var(--jj-space-3) 0 0;
+  border-top: 1px solid var(--jj-color-border-subtle);
+}
+.account-checkin div { display: grid; gap: var(--jj-space-1); }
+.account-checkin .account-checkin-actions { display: flex; align-items: center; gap: var(--jj-space-3); }
+.account-checkin strong { font-size: var(--jj-size-body-large); }
+.account-checkin span { color: var(--jj-color-text-tertiary); font-size: var(--jj-size-caption); }
+
+.account-menu {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--jj-space-3);
+  margin-bottom: var(--jj-space-4);
+}
+
+.account-menu-item {
+  padding: var(--jj-space-4);
+  display: grid;
+  gap: var(--jj-space-1);
+  border: 1px solid var(--jj-color-border-subtle);
+  border-radius: var(--jj-radius-card);
+  background: var(--jj-color-surface-default);
+  box-shadow: var(--jj-shadow-hairline);
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  transition: border-color var(--jj-motion-fast) var(--jj-motion-easing), transform var(--jj-motion-fast) var(--jj-motion-easing);
+}
+
+.account-menu-item:hover {
+  border-color: var(--jj-color-brand-rust);
+  transform: translateY(-1px);
+}
+
+.account-menu-item strong {
+  font-size: var(--jj-size-body-large);
+}
+
+.account-menu-item span {
+  color: var(--jj-color-text-tertiary);
+  font-size: var(--jj-size-caption);
+}
+
+.account-actions {
+  display: flex;
+  gap: var(--jj-space-3);
+}
+
+.account-achievements { margin-top: var(--jj-space-6); }
+.account-section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--jj-space-3); margin-bottom: var(--jj-space-3); }
+.account-section-heading h2 { margin: 0; font-size: var(--jj-size-display-mobile); font-weight: var(--jj-weight-semibold); }
+.account-section-heading > span { color: var(--jj-color-text-tertiary); font-size: var(--jj-size-label); }
+.achievement-empty { margin: 0; padding: var(--jj-space-5); border: 1px dashed var(--jj-color-border-default); border-radius: var(--jj-radius-card); color: var(--jj-color-text-tertiary); font-size: var(--jj-size-label); line-height: var(--jj-leading-body); }
+.achievement-wall { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: var(--jj-space-3); }
+.achievement-card {
+  padding: var(--jj-space-3);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: var(--jj-space-3);
+  border: 1px solid var(--jj-color-border-default);
+  border-radius: var(--jj-radius-card);
+  background: var(--jj-color-surface-default);
+}
+.achievement-card-mark { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-top: var(--jj-space-1); }
+.achievement-card-body { display: grid; gap: var(--jj-space-1); min-width: 0; }
+.achievement-card-body strong { font-size: var(--jj-size-body); font-weight: var(--jj-weight-semibold); }
+.achievement-card-body p { margin: 0; color: var(--jj-color-text-secondary); font-size: var(--jj-size-label); line-height: var(--jj-leading-body); }
+.achievement-card-world { color: var(--jj-color-brand-rust); font-size: var(--jj-size-caption); }
+.achievement-card-reward { color: var(--jj-color-brand-rust); font-size: var(--jj-size-label); font-weight: var(--jj-weight-semibold); white-space: nowrap; }
+
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--jj-space-4);
+}
+
+@media (max-width: 860px) {
+  .account-section-heading h2 { font-size: var(--jj-size-title-mobile); }
+  .account-menu { grid-template-columns: 1fr; }
+  .account-identity { padding: var(--jj-space-3); }
+  .account-checkin { flex-direction: column; align-items: flex-start; }
+}

@@ -1,0 +1,454 @@
+.journey-layout {
+  min-height: calc(100vh - var(--jj-component-navigation-desktop-height));
+  display: grid;
+  grid-template-columns: var(--jj-component-simulation-story-ratio) var(--jj-component-simulation-state-ratio);
+  background: var(--jj-color-surface-default);
+  overflow: clip;
+  border: 1px solid var(--jj-color-border-subtle);
+  border-radius: var(--jj-radius-card);
+}
+
+.reader-column {
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--jj-space-6) var(--jj-space-8) var(--jj-space-10);
+}
+
+.reader-header {
+  max-width: var(--jj-reading-max);
+  margin: 0 auto;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--jj-space-2);
+  color: var(--jj-color-text-secondary);
+  font-size: var(--jj-size-label);
+  transition: color var(--jj-motion-fast) var(--jj-motion-easing);
+}
+.back-link span { color: var(--jj-color-brand-rust); font-weight: var(--jj-weight-regular); }
+.back-link:hover { color: var(--jj-color-text-primary); }
+.reader-topline { display: flex; align-items: center; justify-content: space-between; gap: var(--jj-space-4); }
+.chapter-index,
+.state-kicker {
+  margin: 0 0 var(--jj-space-2);
+  color: var(--jj-color-brand-rust);
+  font-size: var(--jj-size-caption);
+  font-weight: var(--jj-weight-semibold);
+  letter-spacing: 0.14em;
+}
+
+.story-reader {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: var(--jj-space-4) 0 0;
+  color: var(--jj-color-text-primary);
+  font-family: var(--jj-font-reading);
+  font-size: var(--jj-size-reading-desktop);
+  line-height: var(--jj-leading-reading);
+}
+.story-reader h2 { margin: 0; font-family: var(--jj-font-sans); font-size: var(--jj-size-display-mobile); line-height: var(--jj-leading-tight); font-weight: var(--jj-weight-semibold); }
+.chapter-rule { height: var(--jj-space-12); display: flex; align-items: center; }
+.chapter-rule::before { content: ""; width: var(--jj-space-12); height: 1px; background: var(--jj-color-border-strong); }
+.chapter-rule span { width: 5px; height: 5px; margin-left: var(--jj-space-2); background: var(--jj-color-brand-rust); }
+.story-reader > p:not(.chapter-index),
+.journey-scene > p,
+.journey-turn > p { margin: 0 0 var(--jj-space-5); }
+
+/* 逐段浮现：段落依次轻柔落定，仅使用 transform/opacity 保证顺滑 */
+@keyframes jj-story-para {
+  0% { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.story-para {
+  animation: jj-story-para .8s cubic-bezier(.22,1,.36,1) both;
+  will-change: opacity, transform;
+}
+.story-reader blockquote.story-para { animation: jj-story-para .8s cubic-bezier(.22,1,.36,1) both; }
+.story-reader blockquote {
+  margin: var(--jj-space-8) 0;
+  padding: var(--jj-space-4) 0 var(--jj-space-4) var(--jj-space-6);
+  border-left: 2px solid var(--jj-color-brand-rust);
+  color: var(--jj-color-text-secondary);
+  font-style: normal;
+}
+
+/* 幕次目录：新场景等于翻页，用目录回到任意一幕 */
+.journey-toc {
+  padding: var(--jj-space-4) var(--jj-space-5);
+  border: 1px solid var(--jj-color-border-default);
+  border-radius: var(--jj-radius-control);
+  background: var(--jj-color-surface-canvas);
+}
+.journey-toc ol { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--jj-space-1); }
+.journey-toc button {
+  width: 100%;
+  min-height: var(--jj-touch-height);
+  padding: 0 var(--jj-space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--jj-space-3);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: var(--jj-color-text-primary);
+  transition: color var(--jj-motion-fast) var(--jj-motion-easing);
+}
+.journey-toc button:hover { color: var(--jj-color-brand-rust); }
+.journey-toc button > span { color: var(--jj-color-brand-rust); font-size: var(--jj-size-caption); white-space: nowrap; }
+.journey-toc button strong { font-size: var(--jj-size-body); font-weight: var(--jj-weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 场景节与回合块：一场一幕，完整保留历史内容 */
+.journey-scene + .journey-scene {
+  margin-top: var(--jj-space-12);
+  padding-top: var(--jj-space-10);
+  border-top: 1px solid var(--jj-color-border-subtle);
+}
+.journey-scene-heading { margin-bottom: var(--jj-space-6); }
+.journey-scene-heading h3 {
+  margin: 0 0 var(--jj-space-3);
+  font-size: var(--jj-size-title-mobile);
+  line-height: var(--jj-leading-tight);
+  font-weight: var(--jj-weight-semibold);
+}
+.journey-scene-closure {
+  margin: 0;
+  color: var(--jj-color-text-secondary);
+  font-size: var(--jj-size-body);
+  line-height: var(--jj-leading-body);
+}
+.journey-turn { margin-top: 0; }
+
+/* 进入世界的氛围过渡：穿越界门 —— 背景+Logo 渐显，放大撑满屏幕渐隐 */
+@keyframes jj-portal-bg {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+@keyframes jj-portal-mark {
+  0% { opacity: 0; transform: scale(.55); }
+  18% { opacity: 1; transform: scale(.85); }
+  42% { opacity: 1; transform: scale(1.05); }
+  72% { opacity: .9; transform: scale(2.4); }
+  100% { opacity: 0; transform: scale(4.6); }
+}
+@keyframes jj-portal-word {
+  0% { opacity: 0; }
+  14% { opacity: .9; }
+  40% { opacity: 1; }
+  70% { opacity: .8; }
+  100% { opacity: 0; }
+}
+.journey-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--jj-space-6);
+  background: var(--jj-color-brand-ink);
+  animation: jj-portal-bg 1.2s ease-out both;
+  cursor: pointer;
+  will-change: opacity;
+}
+.journey-portal .logo-state-mark .plane-path { fill: var(--jj-color-surface-default); }
+.journey-portal .logo-state-mark .point-rect { fill: var(--jj-color-brand-rust); }
+.journey-portal .logo-state-mark {
+  animation: jj-portal-mark 1.2s cubic-bezier(.32,0,.36,1) both;
+  will-change: transform, opacity;
+}
+.journey-portal .logo-state-panel { flex-direction: column; align-items: center; text-align: center; gap: var(--jj-space-4); }
+.journey-portal .logo-state-copy { display: none; }
+.journey-portal-world {
+  margin: 0;
+  color: rgba(252, 251, 248, .9);
+  font-size: var(--jj-size-body-large);
+  letter-spacing: .08em;
+  animation: jj-portal-word 1.2s ease-out both;
+}
+.story-generation {
+  margin-top: var(--jj-space-8);
+  padding: var(--jj-space-6) 0;
+  display: flex;
+  justify-content: center;
+  animation: jj-fade-in .5s ease-out both;
+}
+.story-generation .logo-state-panel {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--jj-space-4);
+}
+.story-generation .logo-state-copy {
+  font-size: var(--jj-size-body);
+  color: var(--jj-color-text-secondary);
+}
+
+/* 本次花费 + 世界状态分割线（位于上次正文截断处，居中） */
+.story-ender {
+  max-width: var(--jj-reading-max);
+  margin: var(--jj-space-8) auto 0;
+  text-align: center;
+}
+.turn-cost {
+  margin: 0 0 var(--jj-space-3);
+  color: var(--jj-color-text-tertiary);
+  font-size: var(--jj-size-caption);
+}
+.status-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--jj-space-3);
+  color: var(--jj-color-text-tertiary);
+  font-size: var(--jj-size-caption);
+}
+.status-divider::before,
+.status-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--jj-color-border-subtle);
+}
+
+/* 交互面板：三个统一层级的选项（让世界继续 / 看看其他选择 / 自定义输入） */
+.interaction-panel {
+  max-width: var(--jj-reading-max);
+  margin-inline: auto;
+  padding: var(--jj-space-5) 0 var(--jj-space-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--jj-space-3);
+}
+.interact-option,
+.option-form {
+  height: var(--jj-touch-height);
+  border-radius: var(--jj-radius-control);
+  border: 1px solid var(--jj-color-border-strong);
+  font-size: var(--jj-size-body);
+}
+.interact-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--jj-space-3);
+  padding: 0 var(--jj-space-4);
+  background: var(--jj-color-surface-default);
+  color: var(--jj-color-text-primary);
+  font-weight: var(--jj-weight-medium);
+  cursor: pointer;
+  transition: border-color var(--jj-motion-fast) var(--jj-motion-easing), background var(--jj-motion-fast) var(--jj-motion-easing), color var(--jj-motion-fast) var(--jj-motion-easing);
+}
+.interact-option:disabled { opacity: .55; cursor: not-allowed; }
+.interact-option.primary { border-color: var(--jj-color-brand-ink); background: var(--jj-color-brand-ink); color: var(--jj-color-text-inverse); }
+.interact-option.primary:hover { border-color: var(--jj-color-brand-rust); background: var(--jj-color-brand-rust); }
+.interact-option.primary .option-icon { color: inherit; }
+.interact-option.secondary:hover { border-color: var(--jj-color-brand-rust); color: var(--jj-color-brand-rust); }
+.option-icon { color: var(--jj-color-brand-rust); }
+.option-title { white-space: nowrap; }
+.option-hint {
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: .7;
+  color: inherit;
+  font-size: var(--jj-size-caption);
+  font-weight: var(--jj-weight-regular);
+}
+.option-suffix { margin-left: auto; color: var(--jj-color-text-tertiary); font-style: normal; }
+.option-wrap { position: relative; }
+.option-form {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  overflow: hidden;
+  background: var(--jj-color-surface-default);
+}
+.option-form .action-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--jj-space-4);
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--jj-color-text-primary);
+  font: inherit;
+}
+.option-form .action-input::placeholder { color: var(--jj-color-text-tertiary); }
+.option-form .option-submit {
+  flex: 0 0 auto;
+  height: 100%;
+  padding: 0 var(--jj-space-5);
+  border: 0;
+  border-left: 1px solid var(--jj-color-border-default);
+  background: var(--jj-color-brand-ink);
+  color: var(--jj-color-text-inverse);
+  font-weight: var(--jj-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.option-form .option-submit:disabled { background: var(--jj-color-surface-muted); color: var(--jj-color-text-disabled); cursor: not-allowed; }
+.fork-options {
+  position: absolute;
+  z-index: 12;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin: 0;
+  padding: var(--jj-space-1) var(--jj-space-2) var(--jj-space-2);
+  list-style: none;
+  display: grid;
+  gap: var(--jj-space-1);
+  border: 1px solid var(--jj-color-border-default);
+  border-top: 0;
+  border-radius: 0 0 var(--jj-radius-control) var(--jj-radius-control);
+  background: var(--jj-color-surface-default);
+  box-shadow: var(--jj-shadow-popover);
+}
+.fork-options li button {
+  width: 100%;
+  min-height: var(--jj-touch-height);
+  padding: 0 var(--jj-space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--jj-space-3);
+  border: 0;
+  background: transparent;
+  color: var(--jj-color-text-primary);
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--jj-size-body);
+}
+.fork-options li button:hover { background: var(--jj-color-brand-rust-soft); }
+.fork-options li button > span { color: var(--jj-color-brand-rust); font-size: var(--jj-size-caption); }
+
+/* 成就通知条：页面顶部全局提示 */
+.achievement-bar {
+  position: fixed;
+  z-index: 60;
+  top: var(--jj-space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - var(--jj-space-6)));
+  padding: var(--jj-space-3) var(--jj-space-4);
+  display: grid;
+  gap: var(--jj-space-2);
+  border: 1px solid var(--jj-color-brand-rust);
+  border-radius: var(--jj-radius-card);
+  background: var(--jj-color-brand-ink);
+  color: var(--jj-color-text-inverse);
+  box-shadow: var(--jj-shadow-popover);
+  animation: jj-story-para .4s cubic-bezier(.22,1,.36,1) both;
+}
+.achievement-bar > button {
+  position: absolute;
+  top: var(--jj-space-2);
+  right: var(--jj-space-2);
+  width: var(--jj-touch-height);
+  height: var(--jj-touch-height);
+  border: 0;
+  background: transparent;
+  color: var(--jj-color-text-inverse);
+  font-size: var(--jj-size-body-large);
+  cursor: pointer;
+}
+.achievement-bar-item { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--jj-space-3); }
+.achievement-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; }
+.achievement-bar-item strong { font-size: var(--jj-size-body); font-weight: var(--jj-weight-semibold); }
+.achievement-bar-item p { margin: var(--jj-space-1) 0 0; color: rgba(252,251,248,.82); font-size: var(--jj-size-label); line-height: var(--jj-leading-body); }
+.achievement-reward { color: var(--jj-color-brand-rust); font-size: var(--jj-size-label); font-weight: var(--jj-weight-semibold); white-space: nowrap; }
+
+.journey-error { margin: var(--jj-space-3) var(--jj-space-2) 0; color: var(--jj-color-danger); font-size: var(--jj-size-label); line-height: var(--jj-leading-body); }
+
+.state-column {
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--jj-space-6) var(--jj-space-5);
+  border-left: 1px solid var(--jj-color-border-subtle);
+  background: var(--jj-color-surface-canvas);
+}
+.sidebar-stack { display: grid; gap: var(--jj-space-4); }
+.sidebar-block { border: 1px solid var(--jj-color-border-subtle); border-radius: var(--jj-radius-control); background: var(--jj-color-surface-default); overflow: hidden; }
+.sidebar-block summary {
+  min-height: var(--jj-touch-height);
+  padding: 0 var(--jj-space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--jj-space-3);
+  cursor: pointer;
+  color: var(--jj-color-text-primary);
+  font-size: var(--jj-size-body);
+  font-weight: var(--jj-weight-medium);
+  list-style: none;
+}
+.sidebar-block summary::-webkit-details-marker { display: none; }
+.sidebar-block summary .sidebar-block-chevron { display: inline-flex; color: var(--jj-color-text-tertiary); transition: transform var(--jj-motion-fast) var(--jj-motion-easing); }
+.sidebar-block[open] summary .sidebar-block-chevron { transform: rotate(180deg); }
+.sidebar-block-body { padding: var(--jj-space-4); }
+
+.state-column .journey-toc { margin: 0; border: 0; background: transparent; padding: 0; }
+.state-empty { margin: 0; color: var(--jj-color-text-tertiary); font-size: var(--jj-size-label); line-height: var(--jj-leading-body); }
+.state-panel-content { display: grid; }
+.state-section { padding: var(--jj-space-5) 0; border-bottom: 1px solid var(--jj-color-border-subtle); }
+.state-section:first-child { padding-top: 0; }
+.state-section:last-child { padding-bottom: 0; border-bottom: 0; }
+.state-section > strong { display: block; margin-bottom: var(--jj-space-2); font-size: var(--jj-size-body-large); }
+.state-section > span { color: var(--jj-color-text-secondary); font-size: var(--jj-size-label); }
+.relationship-list,
+.echo-list { margin: 0; padding: 0; list-style: none; }
+.relationship-list { display: grid; gap: var(--jj-space-4); }
+.relationship-list li { display: flex; align-items: flex-start; gap: var(--jj-space-3); }
+.relation-mark { width: 6px; height: 6px; margin-top: var(--jj-space-2); flex: 0 0 auto; background: var(--jj-color-success); }
+.relation-mark.warning { background: var(--jj-color-warning); }
+.relationship-list div { display: grid; gap: var(--jj-space-1); }
+.relationship-list strong { font-size: var(--jj-size-body); font-weight: var(--jj-weight-medium); }
+.relationship-list span { color: var(--jj-color-text-secondary); font-size: var(--jj-size-label); }
+.echo-list { display: grid; gap: var(--jj-space-3); color: var(--jj-color-text-secondary); font-size: var(--jj-size-label); line-height: var(--jj-leading-body); }
+.echo-list li { position: relative; padding-left: var(--jj-space-4); }
+.echo-list li::before { content: ""; position: absolute; top: 0.65em; left: 0; width: var(--jj-space-1); height: 1px; background: var(--jj-color-brand-rust); }
+.state-collapsible { padding: var(--jj-space-5) 0 0; border-bottom: 0; }
+.state-collapsible summary { cursor: pointer; color: var(--jj-color-text-secondary); font-size: var(--jj-size-label); font-weight: var(--jj-weight-medium); }
+.state-collapsible-body { margin-top: var(--jj-space-3); display: grid; gap: var(--jj-space-4); }
+.state-collapsible-body .relationship-list { display: grid; gap: var(--jj-space-3); }
+
+.journey-state-trigger {
+  display: none;
+  min-height: var(--jj-touch-height);
+  padding: 0 var(--jj-space-4);
+  border: 1px solid var(--jj-color-border-strong);
+  border-radius: var(--jj-radius-pill);
+  background: var(--jj-color-surface-default);
+  color: var(--jj-color-text-primary);
+  font-size: var(--jj-size-label);
+  font-weight: var(--jj-weight-medium);
+  cursor: pointer;
+}
+
+@media (max-width: 860px) {
+  .journey-nav,
+  .credit,
+  .journey-avatar,
+  .state-column { display: none; }
+  .journey-state-trigger { display: inline-flex; align-items: center; }
+  .journey-layout { min-height: auto; display: block; overflow: visible; border: 0; border-radius: 0; }
+  .reader-column { height: auto; overflow: visible; padding: 0 0 calc(var(--jj-component-navigation-mobile-height) + var(--jj-space-10)); }
+  .story-reader { padding: var(--jj-space-4) 0 0; font-size: var(--jj-size-reading-mobile); }
+  .story-reader h2,
+  .journey-scene-heading h3 { font-size: var(--jj-size-title-mobile); }
+}
+
+@media (max-width: 380px) {
+  .reader-column { padding-inline: var(--jj-space-3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-toc button { transition: none; }
+}

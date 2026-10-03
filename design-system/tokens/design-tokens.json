@@ -1,0 +1,119 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "name": "AI Novel Studio Design System",
+  "version": "0.1.0",
+  "source": "AI 小说创作台品牌系统 v0.6 + 知了平台跨平台可复用设计规范 2026-08-14",
+  "primitive": {
+    "color": {
+      "brand": {
+        "ink": "#20282B",
+        "rust": "#B6694F",
+        "rustHover": "#CE8C74",
+        "rustPressed": "#D89B84",
+        "rustSoft": "#F1DED6",
+        "moss": "#718077"
+      },
+      "surface": {
+        "canvas": "#F3F1EC",
+        "surface": "#FCFBF8",
+        "inverse": "#20282B"
+      },
+      "neutral": {
+        "border": "#DCDDD8",
+        "textSecondary": "#667074",
+        "white": "#FFFFFF",
+        "muted": "#A6ABA7"
+      },
+      "semantic": {
+        "success": "#718077",
+        "warning": "#A46F32",
+        "danger": "#A84242",
+        "info": "#526E78"
+      },
+      "semanticSoft": {
+        "success": "#E5ECE8",
+        "warning": "#F4E9D8",
+        "danger": "#F4E1DF",
+        "info": "#E2EAEC"
+      }
+    },
+    "typography": {
+      "fontFamilySans": "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif",
+      "fontFamilyReading": "'Songti SC', 'Noto Serif CJK SC', 'Source Han Serif SC', STSong, serif",
+   "size": {
+    "micro": "10px",
+    "tiny": "11px",
+    "caption": "12px",
+    "label": "13px",
+    "body": "14px",
+    "bodyLarge": "16px",
+    "readingMobile": "17px",
+    "readingDesktop": "18px",
+    "titleMobile": "24px",
+    "displayMobile": "32px",
+    "displayDesktop": "42px"
+   },
+      "weight": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700 },
+      "lineHeight": { "tight": 1.2, "body": 1.5, "reading": 1.57 }
+    },
+    "radius": { "control": "10px", "card": "12px", "chip": "14px", "composer": "24px", "pill": "999px" },
+  "spacing": {
+   "1": "0.25rem",
+   "2": "0.5rem",
+   "3": "0.75rem",
+   "4": "1rem",
+   "5": "1.25rem",
+   "6": "1.5rem",
+   "8": "2rem",
+   "10": "2.5rem",
+   "12": "3rem",
+   "14": "3.5rem",
+   "16": "4rem"
+  },
+    "elevation": {
+      "hairline": "inset 0 0 0 1px #DCDDD8",
+      "surface": "0 12px 36px rgba(32, 40, 43, .06), 0 0 0 1px #DCDDD8",
+      "popover": "0 18px 45px rgba(32, 40, 43, .16)"
+    },
+    "motion": { "fast": "140ms", "standard": "180ms", "easing": "ease-out" }
+  },
+  "semantic": {
+    "text": {
+      "primary": "#20282B",
+      "secondary": "#667074",
+      "tertiary": "rgba(32, 40, 43, .72)",
+      "disabled": "rgba(32, 40, 43, .32)",
+      "inverse": "#FCFBF8"
+    },
+    "surface": { "canvas": "#F3F1EC", "default": "#FCFBF8", "muted": "#EAE9E3", "inverse": "#20282B" },
+    "border": { "default": "#DCDDD8", "strong": "#BFC3BE", "subtle": "#E9E9E4" },
+    "brand": { "primary": "#20282B", "accent": "#B6694F", "accentSoft": "#F1DED6" },
+    "focus": { "ring": "rgba(182, 105, 79, .34)" },
+    "reading": { "fontFamily": "'Songti SC', 'Noto Serif CJK SC', 'Source Han Serif SC', STSong, serif", "lineHeight": 1.57, "maxWidth": "44rem" },
+    "layout": { "contentMax": "1200px", "readingMax": "44rem", "desktopMin": "1280px", "mobileMin": "320px" }
+  },
+  "component": {
+    "control": { "height": "40px", "touchHeight": "44px", "radius": "10px", "horizontalPadding": "16px" },
+    "chip": { "height": "2.25rem" },
+    "card": { "radius": "12px", "padding": "24px" },
+    "composer": { "radius": "24px", "safeAreaBottom": "env(safe-area-inset-bottom)" },
+    "navigation": { "mobileHeight": "64px", "desktopHeight": "64px" },
+    "worldCard": { "minHeight": "220px" },
+    "storyCard": {
+      "radius": "12px",
+      "padding": "1.25rem",
+      "coverHeight": "180px",
+      "coverHeightMobile": "220px",
+      "gridGap": "1.25rem",
+      "sectionGap": "2rem",
+      "contentGap": "0.5rem",
+      "titleGap": "0.75rem",
+      "metaGap": "1rem",
+      "hookMinHeight": "54px",
+      "promiseMinHeight": "42px",
+      "actionHeight": "44px",
+      "borderWidth": "1px"
+    },
+    "simulation": { "storyRatio": "7fr", "stateRatio": "3fr" }
+  }
+}

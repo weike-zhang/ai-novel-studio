@@ -1,0 +1,1060 @@
+openapi: 3.1.0
+info:
+  title: AI 小说创作台 API
+  version: 0.1.0
+  description: AI 小说创作台 P0 接口契约。未经提交的正文不会通过任何接口返回。
+servers:
+  - url: /v1
+paths:
+  /auth/login:
+    post:
+      operationId: login
+      summary: 使用账号密码建立长期可撤销会话
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountName, password]
+              properties:
+                accountName: { type: string, minLength: 4, maxLength: 20 }
+                password: { type: string, minLength: 10, maxLength: 72, writeOnly: true }
+      responses:
+        "200": { description: 已通过 HttpOnly Cookie 建立会话 }
+        "401": { description: 账号或凭据不正确 }
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: 撤销当前会话族
+      security: [{ sessionCookie: [] }]
+      responses:
+        "204": { description: 已退出 }
+        "401": { description: 需要登录 }
+  /auth/logout-all:
+    post:
+      operationId: logoutAll
+      summary: 撤销当前账户全部会话
+      security: [{ sessionCookie: [] }]
+      responses:
+        "204": { description: 已退出全部会话 }
+        "401": { description: 需要登录 }
+  /auth/password/recover:
+    post:
+      operationId: recoverPassword
+      summary: 使用一次性恢复码重置密码并轮换恢复码
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountName, recoveryCode, replacementPassword]
+              properties:
+                accountName: { type: string }
+                recoveryCode: { type: string, writeOnly: true }
+                replacementPassword: { type: string, minLength: 10, maxLength: 72, writeOnly: true }
+      responses:
+        "200": { description: 新恢复码仅在本响应展示一次 }
+        "401": { description: 账号或凭据不正确 }
+  /auth/password/change:
+    post:
+      operationId: changePassword
+      summary: 校验当前密码后修改密码并撤销其他会话
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, replacementPassword]
+              properties:
+                currentPassword: { type: string, writeOnly: true }
+                replacementPassword: { type: string, minLength: 10, maxLength: 72, writeOnly: true }
+      responses:
+        "204": { description: 密码已修改，当前会话保持有效，其他会话已撤销 }
+        "401": { description: 需要登录或当前密码不正确 }
+  /auth/recovery-code/rotate:
+    post:
+      operationId: rotateRecoveryCode
+      summary: 已登录且验证当前密码后重新生成恢复码
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword]
+              properties:
+                currentPassword: { type: string, writeOnly: true }
+      responses:
+        "200":
+          description: 新恢复码仅在本响应展示一次
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [recoveryCode]
+                properties:
+                  recoveryCode: { type: string, writeOnly: true }
+        "401": { description: 需要登录或当前密码不正确 }
+  /me:
+    get:
+      operationId: getMe
+      summary: 当前用户身份与权益摘要
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: 邮箱为脱敏展示值，不可作为凭据
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [userId, accountName, email, emailVerified, availableBalance]
+                properties:
+                  userId: { type: string, format: uuid }
+                  accountName: { type: string }
+                  nickname: { type: string }
+                  email: { type: string }
+                  emailVerified: { type: boolean }
+                  adultConfirmed: { type: boolean }
+                  termsVersion: { type: string }
+                  status: { type: string }
+                  availableBalance: { type: integer, format: int64 }
+                  createdAt: { type: string, format: date-time }
+                  recoveryCodeSet: { type: boolean }
+        "401": { description: 需要登录 }
+  /me/sessions:
+    get:
+      operationId: listSessions
+      summary: 查看当前账户的活动会话
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: 仅返回未撤销的会话；current 标记当前请求使用的会话
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sessions]
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, familyId, createdAt, lastUsedAt, current]
+                      properties:
+                        id: { type: string, format: uuid }
+                        familyId: { type: string, format: uuid }
+                        createdAt: { type: string, format: date-time }
+                        lastUsedAt: { type: string, format: date-time }
+                        current: { type: boolean }
+        "401": { description: 需要登录 }
+  /me/sessions/revoke:
+    post:
+      operationId: revokeSession
+      summary: 撤销指定会话；撤销当前会话会清除登录 Cookie
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId]
+              properties:
+                sessionId: { type: string, format: uuid }
+      responses:
+        "204": { description: 会话已撤销 }
+        "401": { description: 需要登录 }
+        "404": { description: 会话不存在或不属于当前账户 }
+  /auth/email-verification-codes:
+    post:
+      operationId: sendEmailVerificationCode
+      summary: 校验 Turnstile 与风险后向注册邮箱发送验证码
+      description: 返回绑定本次发送的注册 nonce 与冷却秒数；验证码 10 分钟有效、最多输错 5 次、60 秒后可重发。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, turnstileToken]
+              properties:
+                email: { type: string, format: email, maxLength: 320 }
+                turnstileToken: { type: string, writeOnly: true }
+      responses:
+        "202":
+          description: 验证码已受理发送
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [nonce]
+                properties:
+                  nonce: { type: string }
+                  cooldownSeconds: { type: integer, minimum: 0 }
+        "400": { description: Turnstile 校验失败或请求无效 }
+        "403": { description: 本次注册被风控拒绝 }
+        "409": { description: 邮箱已注册 }
+        "422": { description: 邮箱格式错误或为临时邮箱 }
+        "429": { description: 发送过于频繁或超出 24 小时上限 }
+  /auth/register:
+    post:
+      operationId: register
+      summary: 使用账号、密码、邮箱验证码与注册 nonce 完成注册
+      description: 在单个 MySQL 事务中创建用户、钱包、初光资格、恢复码摘要与初始会话，并消费验证码；注册成功后通过 HttpOnly Cookie 建立会话。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountName, password, email, code, nonce, turnstileToken, adultConfirmed, termsVersion]
+              properties:
+                accountName: { type: string, minLength: 4, maxLength: 20 }
+                password: { type: string, minLength: 10, maxLength: 72, writeOnly: true }
+                email: { type: string, format: email, maxLength: 320 }
+                code: { type: string, writeOnly: true }
+                nonce: { type: string, writeOnly: true }
+                turnstileToken: { type: string, writeOnly: true }
+                adultConfirmed: { type: boolean }
+                termsVersion: { type: string }
+      responses:
+        "201":
+          description: 注册成功，已建立会话；恢复码仅展示一次
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [userId, accountName, recoveryCode]
+                properties:
+                  userId: { type: string, format: uuid }
+                  accountName: { type: string }
+                  recoveryCode: { type: string, writeOnly: true }
+                  grantedLight: { type: integer, format: int64 }
+        "400": { description: Turnstile 校验失败或请求无效 }
+        "403": { description: 本次注册被风控拒绝 }
+        "409": { description: 账号或邮箱已占用 }
+        "422": { description: 字段不合法、未确认 18+ 或验证码错误 }
+  /worlds:
+    get:
+      operationId: listWorlds
+      summary: 浏览公开世界
+      parameters:
+        - { name: keyword, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: type, in: query, schema: { type: string, maxLength: 40 } }
+        - { name: tags, in: query, description: 逗号分隔标签, schema: { type: string } }
+        - { name: sort, in: query, schema: { type: string, enum: [newest, popular, recommended], default: newest } }
+        - { name: cursor, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: 仅返回已公开且未下架的世界
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorldPage" }
+    post:
+      operationId: createWorld
+      summary: 创建服务器私密世界草稿
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateWorldDraftInput" }
+      responses:
+        "201":
+          description: 私密草稿已创建
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthoringWorld" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/WorldValidationFailed" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  /worlds/generate-draft:
+    post:
+      operationId: generateWorldDraft
+      summary: 异步生成私密结构化世界草稿
+      description: 模型输出经结构、长度和内容安全校验后才会原子保存；生成期间及失败、取消时不返回半成品世界。
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GenerateWorldDraftInput" }
+      responses:
+        "202":
+          description: 世界草稿任务已接受；相同用户、幂等键和规范化输入返回原任务
+          headers:
+            Location:
+              description: 可恢复任务快照地址
+              schema: { type: string, example: /v1/jobs/018f4f6d-5b80-7e65-ae29-8f9f0abf4192 }
+            Idempotent-Replayed:
+              description: 是否由相同幂等请求重放得到
+              schema: { type: boolean }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorldDraftJob" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/JobConflict" }
+        "422": { $ref: "#/components/responses/WorldValidationFailed" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /worlds/{worldId}:
+    get:
+      operationId: getWorld
+      summary: 查看世界详情
+      parameters:
+        - $ref: "#/components/parameters/WorldId"
+      responses:
+        "200":
+          description: 世界详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/World" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateWorld
+      summary: 按版本更新私密世界草稿
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/WorldId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateWorldDraftInput" }
+      responses:
+        "200":
+          description: 草稿已更新，已有 AI 字段确认失效
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthoringWorld" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/WorldValidationFailed" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  /worlds/{worldId}/confirm-ai-fields:
+    post:
+      operationId: confirmAIWorldFields
+      summary: 确认当前版本 AI 草稿的全部发布必填字段
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/WorldId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmAIWorldFieldsInput" }
+      responses:
+        "200":
+          description: 当前版本字段已确认；世界版本号不变
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthoringWorld" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/WorldValidationFailed" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  /worlds/{worldId}/publish:
+    post:
+      operationId: publishWorld
+      summary: 对当前草稿先审后发
+      description: 自动审核通过时公开；高风险或不确定内容保持私密并进入 pending_review。
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/WorldId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChangeWorldPublicationInput" }
+      responses:
+        "200":
+          description: 审核通过并已公开
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthoringWorld" }
+        "202":
+          description: 已进入人工复核，审核通过前保持私密
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthoringWorld" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/WorldValidationFailed" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /worlds/{worldId}/unpublish:
+    post:
+      operationId: unpublishWorld
+      summary: 下架公开世界或撤回人工审核申请
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/WorldId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChangeWorldPublicationInput" }
+      responses:
+        "200":
+          description: 已转回可编辑的私密草稿，已有旅程快照不受影响
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthoringWorld" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  /worlds/{worldId}/reports:
+    post:
+      operationId: reportWorld
+      summary: 提交对世界的举报
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/WorldId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateWorldReportInput" }
+      responses:
+        "201":
+          description: 举报已受理
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorldReport" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: 同一用户对同一世界已有未处理举报 }
+        "422": { $ref: "#/components/responses/WorldValidationFailed" }
+        "500": { $ref: "#/components/responses/InternalError" }
+  /simulations:
+    post:
+      operationId: createSimulation
+      summary: 从世界快照创建私人旅程
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [worldId]
+              properties:
+                worldId: { type: string, format: uuid }
+      responses:
+        "201":
+          description: 旅程已创建
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Simulation" }
+        "401": { description: 需要登录 }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /me/achievements:
+    get:
+      operationId: getMyAchievements
+      summary: 我的成就墙（全局 + 各世界）
+      security: [{ sessionCookie: [] }]
+      responses:
+        "200":
+          description: 已获得的成就，按时间倒序
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AchievementList" }
+        "401": { description: 需要登录 }
+  /simulations/{simulationId}/turn-jobs:
+    post:
+      operationId: createTurnJob
+      summary: 接受一幕生成任务并预占微光
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/SimulationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, maxLength: 2000, description: continue 时留空，act/branch 必填 }
+                interaction:
+                  type: string
+                  enum: [act, branch, continue]
+                  default: act
+      responses:
+        "202":
+          description: 任务已接受
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TurnJob" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { description: 微光不足 }
+        "409": { $ref: "#/components/responses/JobConflict" }
+  /simulations/{simulationId}:
+    get:
+      operationId: getSimulation
+      summary: 恢复已提交的旅程状态与最近回合
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/SimulationId"
+      responses:
+        "200":
+          description: 仅包含已提交回合，不返回模型草稿
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SimulationSnapshot" }
+        "401": { description: 需要登录 }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+      summary: 查询可恢复任务快照
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/JobId"
+      responses:
+        "200":
+          description: 带 kind 判别字段的任务快照；只有完成态包含已提交结果
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIJob" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /jobs/{jobId}/events:
+    get:
+      operationId: streamJobEvents
+      summary: 订阅任务阶段及已提交正文回放
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/JobId"
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: text/event-stream；提交前只发送阶段，不发送正文草稿
+          content:
+            text/event-stream:
+              schema: { type: string }
+              x-sse-event-schema: { $ref: "#/components/schemas/AIJobEvent" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /jobs/{jobId}/cancel:
+    post:
+      operationId: cancelJob
+      summary: 请求停止尚未进入提交边界的任务
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/JobId"
+      responses:
+        "202":
+          description: 已记录取消请求，返回更新后的任务联合类型
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIJob" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/JobConflict" }
+  /jobs/{jobId}/retry:
+    post:
+      operationId: retryJob
+      summary: 为失败任务创建新的持久化尝试
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - $ref: "#/components/parameters/JobId"
+      responses:
+        "202":
+          description: 重试已接受，同一任务 ID 的 attemptNo 递增
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIJob" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/JobConflict" }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: novelstudio_session
+  schemas:
+    WorldCard:
+      type: object
+      required: [id, ownerId, authorNickname, title, summary, tags, simulationCount, version, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        ownerId: { type: string, format: uuid }
+        authorNickname: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        cover: { type: string }
+        type: { type: string }
+        tags: { type: array, items: { type: string } }
+        simulationCount: { type: integer, format: int64 }
+        version: { type: integer, format: int64 }
+        updatedAt: { type: string, format: date-time }
+    World:
+      allOf:
+        - { $ref: "#/components/schemas/WorldCard" }
+        - type: object
+          required: [visibility, status, setting]
+          properties:
+            visibility: { type: string, enum: [private, public] }
+            status: { $ref: "#/components/schemas/WorldStatus" }
+            setting: { type: object, additionalProperties: true }
+    WorldStatus:
+      type: string
+      enum: [draft, pending_review, published, suspended, archived]
+    DraftSource:
+      type: string
+      enum: [manual, ai]
+    AuthoringWorld:
+      type: object
+      required: [id, ownerId, title, summary, setting, visibility, status, version, draftSource, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        ownerId: { type: string, format: uuid }
+        title: { type: string, minLength: 1, maxLength: 80 }
+        summary: { type: string, maxLength: 500 }
+        setting: { type: object, additionalProperties: true }
+        visibility: { type: string, enum: [private, public] }
+        status: { $ref: "#/components/schemas/WorldStatus" }
+        version: { type: integer, format: int64, minimum: 1 }
+        draftSource: { $ref: "#/components/schemas/DraftSource" }
+        humanConfirmedVersion: { type: integer, format: int64, minimum: 1 }
+        humanConfirmedFields: { type: array, items: { type: string } }
+        humanConfirmedAt: { type: string, format: date-time }
+        publishedAt: { type: string, format: date-time }
+        unpublishedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    GenerateWorldDraftInput:
+      type: object
+      additionalProperties: false
+      required: [topic, type, contentRating, boundaries]
+      properties:
+        topic:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: 世界主题与核心创作想法
+        type: { type: string, minLength: 1, maxLength: 40 }
+        contentRating: { type: string, enum: [全年龄, 13+, 16+, 18+] }
+        boundaries:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: 创作者要求保留或避免的内容；不能覆盖平台安全规则
+    AIJobStatus:
+      type: string
+      enum: [queued, planning, drafting, validating, committing, completed, failed, cancelled]
+    ActiveAIJobStatus:
+      type: string
+      enum: [queued, planning, drafting, validating, committing]
+    AIJobBase:
+      type: object
+      required: [id, kind, status, attemptNo, canCancel, canRetry, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [turn, world_draft] }
+        status: { $ref: "#/components/schemas/AIJobStatus" }
+        attemptNo: { type: integer, minimum: 0 }
+        queuePosition: { type: integer, minimum: 0 }
+        canCancel: { type: boolean }
+        canRetry: { type: boolean }
+        errorCode: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    WorldDraftJobBase:
+      allOf:
+        - { $ref: "#/components/schemas/AIJobBase" }
+        - type: object
+          required: [kind]
+          properties:
+            kind: { const: world_draft }
+    ActiveWorldDraftJob:
+      allOf:
+        - { $ref: "#/components/schemas/WorldDraftJobBase" }
+        - type: object
+          required: [status]
+          properties:
+            status: { $ref: "#/components/schemas/ActiveAIJobStatus" }
+            result: false
+    CompletedWorldDraftJob:
+      allOf:
+        - { $ref: "#/components/schemas/WorldDraftJobBase" }
+        - type: object
+          required: [status, result]
+          properties:
+            status: { const: completed }
+            canCancel: { const: false }
+            canRetry: { const: false }
+            result:
+              type: object
+              additionalProperties: false
+              required: [world]
+              properties:
+                world: { $ref: "#/components/schemas/GeneratedPrivateWorld" }
+    FailedWorldDraftJob:
+      allOf:
+        - { $ref: "#/components/schemas/WorldDraftJobBase" }
+        - type: object
+          required: [status, errorCode]
+          properties:
+            status: { const: failed }
+            canCancel: { const: false }
+            result: false
+    CancelledWorldDraftJob:
+      allOf:
+        - { $ref: "#/components/schemas/WorldDraftJobBase" }
+        - type: object
+          required: [status]
+          properties:
+            status: { const: cancelled }
+            canCancel: { const: false }
+            result: false
+    WorldDraftJob:
+      oneOf:
+        - { $ref: "#/components/schemas/ActiveWorldDraftJob" }
+        - { $ref: "#/components/schemas/CompletedWorldDraftJob" }
+        - { $ref: "#/components/schemas/FailedWorldDraftJob" }
+        - { $ref: "#/components/schemas/CancelledWorldDraftJob" }
+      discriminator:
+        propertyName: status
+        mapping:
+          completed: "#/components/schemas/CompletedWorldDraftJob"
+          failed: "#/components/schemas/FailedWorldDraftJob"
+          cancelled: "#/components/schemas/CancelledWorldDraftJob"
+    GeneratedPrivateWorld:
+      allOf:
+        - { $ref: "#/components/schemas/AuthoringWorld" }
+        - type: object
+          required: [visibility, status, draftSource]
+          properties:
+            visibility: { const: private }
+            status: { const: draft }
+            draftSource: { const: ai }
+            humanConfirmedVersion: false
+            humanConfirmedFields: false
+            humanConfirmedAt: false
+            publishedAt: false
+            unpublishedAt: false
+    TurnJob:
+      allOf:
+        - { $ref: "#/components/schemas/AIJobBase" }
+        - type: object
+          required: [kind, simulationId]
+          properties:
+            kind: { const: turn }
+            simulationId: { type: string, format: uuid }
+            committedTurn: { $ref: "#/components/schemas/CommittedTurn" }
+    AIJob:
+      oneOf:
+        - { $ref: "#/components/schemas/TurnJob" }
+        - { $ref: "#/components/schemas/WorldDraftJob" }
+      discriminator:
+        propertyName: kind
+        mapping:
+          turn: "#/components/schemas/TurnJob"
+          world_draft: "#/components/schemas/WorldDraftJob"
+    JobStatusEvent:
+      type: object
+      required: [event, data]
+      properties:
+        event: { const: job.status }
+        data:
+          type: object
+          required: [jobId, kind, status, attemptNo, canCancel]
+          properties:
+            jobId: { type: string, format: uuid }
+            kind: { type: string, enum: [turn, world_draft] }
+            status: { $ref: "#/components/schemas/AIJobStatus" }
+            attemptNo: { type: integer, minimum: 0 }
+            queuePosition: { type: integer, minimum: 0 }
+            canCancel: { type: boolean }
+            errorCode: { type: string }
+    WorldDraftCompletedEvent:
+      type: object
+      required: [event, data]
+      properties:
+        event: { const: world_draft.completed }
+        data:
+          type: object
+          required: [jobId, worldId]
+          properties:
+            jobId: { type: string, format: uuid }
+            worldId: { type: string, format: uuid }
+    TurnCommittedEvent:
+      type: object
+      required: [event, data]
+      properties:
+        event: { const: turn.committed }
+        data: { $ref: "#/components/schemas/CommittedTurn" }
+    JobErrorEvent:
+      type: object
+      required: [event, data]
+      properties:
+        event: { const: error }
+        data:
+          type: object
+          required: [code]
+          properties:
+            code: { type: string }
+    AIJobEvent:
+      oneOf:
+        - { $ref: "#/components/schemas/JobStatusEvent" }
+        - { $ref: "#/components/schemas/WorldDraftCompletedEvent" }
+        - { $ref: "#/components/schemas/TurnCommittedEvent" }
+        - { $ref: "#/components/schemas/JobErrorEvent" }
+      discriminator:
+        propertyName: event
+    CreateWorldDraftInput:
+      type: object
+      additionalProperties: false
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 80 }
+        summary: { type: string, maxLength: 500 }
+        setting: { type: object, additionalProperties: true, default: {} }
+        source:
+          allOf: [{ $ref: "#/components/schemas/DraftSource" }]
+          default: manual
+    UpdateWorldDraftInput:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion, title, summary, setting]
+      properties:
+        expectedVersion: { type: integer, format: int64, minimum: 1 }
+        title: { type: string, minLength: 1, maxLength: 80 }
+        summary: { type: string, maxLength: 500 }
+        setting: { type: object, additionalProperties: true }
+    ConfirmAIWorldFieldsInput:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion, fields]
+      properties:
+        expectedVersion: { type: integer, format: int64, minimum: 1 }
+        fields:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [title, summary, setting.worldBackground, setting.playerIdentity, setting.characters, setting.opening, setting.contentRating]
+    ChangeWorldPublicationInput:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion]
+      properties:
+        expectedVersion: { type: integer, format: int64, minimum: 1 }
+    CreateWorldReportInput:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          enum: [违法违规, 色情低俗, 暴力仇恨, 侵权冒用, 其他]
+        note: { type: string, maxLength: 300 }
+    WorldReport:
+      type: object
+      required: [id, worldId, reporterId, reason, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        worldId: { type: string, format: uuid }
+        reporterId: { type: string, format: uuid }
+        reason: { type: string, enum: [违法违规, 色情低俗, 暴力仇恨, 侵权冒用, 其他] }
+        note: { type: string, maxLength: 300 }
+        status: { type: string, enum: [pending, reviewing, resolved, dismissed] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ValidationIssue:
+      type: object
+      required: [field, code, message]
+      properties:
+        field: { type: string }
+        code: { type: string }
+        message: { type: string }
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+    WorldValidationError:
+      allOf:
+        - { $ref: "#/components/schemas/ErrorResponse" }
+        - type: object
+          required: [issues]
+          properties:
+            issues: { type: array, items: { $ref: "#/components/schemas/ValidationIssue" } }
+    WorldPage:
+      type: object
+      required: [worlds]
+      properties:
+        worlds: { type: array, items: { $ref: "#/components/schemas/WorldCard" } }
+        nextCursor: { type: string }
+    Simulation:
+      type: object
+      required: [id, userId, worldId, worldVersion, worldSnapshot, status, version, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        worldId: { type: string, format: uuid }
+        worldVersion: { type: integer, format: int64 }
+        worldSnapshot: { type: object, additionalProperties: true }
+        status: { type: string }
+        version: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
+    CommittedTurn:
+      type: object
+      required: [id, simulationId, seq, sceneNo, sceneTitle, sceneClosure, interaction, userAction, proposal, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        simulationId: { type: string, format: uuid }
+        seq: { type: integer }
+        sceneNo: { type: integer }
+        sceneTitle: { type: string }
+        sceneClosure: { type: string }
+        interaction: { type: string, enum: [act, branch, continue] }
+        userAction: { type: string }
+        proposal: { type: object, additionalProperties: true }
+        status: { const: committed }
+        achievements:
+          type: array
+          items: { $ref: "#/components/schemas/AchievementAward" }
+        createdAt: { type: string, format: date-time }
+    AchievementAward:
+      type: object
+      required: [scope, code, title, description, reward]
+      properties:
+        scope: { type: string, enum: [global, world, emergent] }
+        worldId: { type: string, format: uuid }
+        code: { type: string }
+        title: { type: string }
+        description: { type: string }
+        reward: { type: integer }
+    Achievement:
+      type: object
+      required: [scope, code, title, description, reward, createdAt]
+      properties:
+        scope: { type: string, enum: [global, world, emergent] }
+        worldId: { type: string, format: uuid }
+        worldTitle: { type: string }
+        code: { type: string }
+        title: { type: string }
+        description: { type: string }
+        reward: { type: integer }
+        createdAt: { type: string, format: date-time }
+    AchievementList:
+      type: object
+      required: [achievements]
+      properties:
+        achievements:
+          type: array
+          items: { $ref: "#/components/schemas/Achievement" }
+    SimulationSnapshot:
+      type: object
+      required: [id, worldId, worldSnapshot, state, summary, version, lastTurnSeq, lastSceneNo, characters, threads, recentTurns]
+      properties:
+        id: { type: string, format: uuid }
+        worldId: { type: string, format: uuid }
+        worldSnapshot: { type: object, additionalProperties: true }
+        state: { type: object, additionalProperties: true }
+        summary: { type: string }
+        version: { type: integer, format: int64 }
+        lastTurnSeq: { type: integer }
+        lastSceneNo: { type: integer }
+        characters: { type: object, additionalProperties: true }
+        threads: { type: object, additionalProperties: true }
+        recentTurns:
+          type: array
+          items: { $ref: "#/components/schemas/CommittedTurn" }
+  parameters:
+    WorldId:
+      name: worldId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    SimulationId:
+      name: simulationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    JobId:
+      name: jobId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: 同一用户和规范化输入的安全重放键；不同输入复用同一键返回 409
+      schema: { type: string, minLength: 16, maxLength: 128 }
+  responses:
+    BadRequest:
+      description: 请求体格式不正确
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Unauthorized:
+      description: 需要登录
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Forbidden:
+      description: 当前账户或内容不能执行该操作
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    NotFound:
+      description: 资源不存在或当前用户无权访问
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Conflict:
+      description: 世界版本或生命周期状态冲突
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    JobConflict:
+      description: 幂等键复用于不同输入、已有活动任务，或当前任务状态不允许该操作
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    WorldValidationFailed:
+      description: 世界字段不完整、超限或公开内容需要修改
+      content:
+        application/json:
+          schema:
+            anyOf:
+              - { $ref: "#/components/schemas/ErrorResponse" }
+              - { $ref: "#/components/schemas/WorldValidationError" }
+    InternalError:
+      description: 服务内部错误
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    ServiceUnavailable:
+      description: 发布审核暂时不可用，世界保持私密
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }

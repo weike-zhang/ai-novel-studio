@@ -1,0 +1,24 @@
+{
+  "name": "ai-novel-studio",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "predev:web": "npm run build:api-client",
+    "dev:web": "npm --workspace @ai-novel-studio/web run dev",
+    "prebuild:web": "npm run build:api-client",
+    "build:web": "npm --workspace @ai-novel-studio/web run build",
+    "lint:web": "npm --workspace @ai-novel-studio/web run lint",
+    "test:web": "npm --workspace @ai-novel-studio/web run test",
+    "build:api-client": "npm --workspace @ai-novel-studio/api-client run build",
+    "check:api-client": "npm --workspace @ai-novel-studio/api-client run check",
+    "test:api-client": "npm --workspace @ai-novel-studio/api-client run test",
+    "tokens:build": "node scripts/build-design-tokens.mjs",
+    "tokens:check": "node scripts/build-design-tokens.mjs --check"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

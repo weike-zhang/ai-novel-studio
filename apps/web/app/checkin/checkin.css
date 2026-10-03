@@ -1,0 +1,168 @@
+/* 签到弹窗 */
+.checkin-dialog {
+  display: grid;
+  gap: var(--jj-space-4);
+  padding: 0;
+}
+
+/* 顶部居中 logo */
+.checkin-logo {
+  display: flex;
+  justify-content: center;
+  margin-top: calc(var(--jj-space-1) * -1);
+}
+
+/* 统计行：连续天数 + 累计微光 */
+.checkin-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--jj-space-5);
+  margin: 0;
+  color: var(--jj-color-text-secondary);
+  font-size: var(--jj-size-label);
+}
+.checkin-summary b {
+  color: var(--jj-color-brand-rust);
+  font-size: var(--jj-size-body-large);
+  font-weight: var(--jj-weight-semibold);
+}
+.checkin-summary i {
+  width: 1px;
+  height: var(--jj-space-5);
+  background: var(--jj-color-border-subtle);
+}
+
+/* 周期切换 */
+.range-tabs {
+  display: inline-flex;
+  justify-self: center;
+  padding: var(--jj-space-1);
+  border: 1px solid var(--jj-color-border-subtle);
+  border-radius: var(--jj-radius-pill);
+  background: var(--jj-color-surface-muted);
+}
+.range-tabs button {
+  flex: 0 0 auto;
+  padding: var(--jj-space-2) var(--jj-space-5);
+  border: 0;
+  border-radius: var(--jj-radius-pill);
+  background: transparent;
+  color: var(--jj-color-text-secondary);
+  font: inherit;
+  font-size: var(--jj-size-label);
+  cursor: pointer;
+  transition: background var(--jj-motion-fast) var(--jj-motion-easing), color var(--jj-motion-fast) var(--jj-motion-easing);
+}
+.range-tabs button.active { background: var(--jj-color-brand-ink); color: var(--jj-color-text-inverse); }
+
+/* 日历格子 */
+.checkin-cells {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--jj-space-3);
+}
+.checkin-cells-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.checkin-cells-30 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+.checkin-cell {
+  position: relative;
+  min-width: 0;
+  min-height: 72px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--jj-space-2);
+  border: 1px solid var(--jj-color-border-subtle);
+  border-radius: var(--jj-radius-card);
+  background: var(--jj-color-surface-muted);
+  text-align: center;
+}
+.checkin-cell .cell-date { color: var(--jj-color-text-secondary); font-size: var(--jj-size-caption); }
+.checkin-cell .cell-reward { color: var(--jj-color-text-tertiary); font-size: var(--jj-size-label); font-weight: var(--jj-weight-medium); }
+.checkin-cell.signed { border-color: var(--jj-color-success); background: var(--jj-color-success-soft); }
+.checkin-cell.signed .cell-date { color: var(--jj-color-success); font-weight: var(--jj-weight-medium); }
+.checkin-cell.signed .cell-mark {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--jj-radius-pill);
+  background: var(--jj-color-success);
+  color: var(--jj-color-text-inverse);
+  font-size: var(--jj-size-body);
+}
+.checkin-cell.today { border-color: var(--jj-color-brand-rust); border-width: 2px; }
+.checkin-cell.today:not(.signed) { background: var(--jj-color-brand-rust-soft); }
+.checkin-cell.today .cell-date { color: var(--jj-color-brand-rust); font-weight: var(--jj-weight-semibold); }
+.checkin-cell.future {
+  border-color: var(--jj-color-border-subtle);
+  background: var(--jj-color-surface-default);
+}
+.checkin-cell.future .cell-date,
+.checkin-cell.future .cell-reward { color: var(--jj-color-text-disabled); }
+.checkin-cell .cell-bonus {
+  position: absolute;
+  top: var(--jj-space-2);
+  right: var(--jj-space-2);
+  padding: 1px var(--jj-space-2);
+  border-radius: var(--jj-radius-pill);
+  background: var(--jj-color-warning-soft);
+  color: var(--jj-color-warning);
+  font-size: var(--jj-size-micro);
+  font-weight: var(--jj-weight-semibold);
+}
+
+/* 今天的签到按钮（做在日历上） */
+.checkin-cell .cell-checkin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - var(--jj-space-2));
+  max-width: 72px;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 var(--jj-space-2);
+  border: 1px solid var(--jj-color-brand-rust);
+  border-radius: var(--jj-radius-control);
+  background: var(--jj-color-surface-default);
+  color: var(--jj-color-brand-rust);
+  font: inherit;
+  font-size: var(--jj-size-caption);
+  font-weight: var(--jj-weight-semibold);
+  line-height: 1;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background var(--jj-motion-fast) var(--jj-motion-easing), color var(--jj-motion-fast) var(--jj-motion-easing), transform var(--jj-motion-fast) var(--jj-motion-easing), opacity var(--jj-motion-fast) var(--jj-motion-easing);
+}
+.checkin-cell .cell-checkin:hover { background: var(--jj-color-brand-rust); color: var(--jj-color-text-inverse); transform: translateY(-1px); }
+.checkin-cell .cell-checkin:focus-visible { box-shadow: 0 0 0 3px var(--jj-focus-ring); }
+.checkin-cell .cell-checkin:disabled { border-color: var(--jj-color-border-default); background: var(--jj-color-surface-muted); color: var(--jj-color-text-disabled); opacity: 1; cursor: wait; transform: none; }
+
+/* 图例 */
+.checkin-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--jj-space-5);
+  margin: 0;
+  padding-top: var(--jj-space-4);
+  border-top: 1px solid var(--jj-color-border-subtle);
+  color: var(--jj-color-text-tertiary);
+  font-size: var(--jj-size-caption);
+}
+.checkin-legend span { display: inline-flex; align-items: center; gap: var(--jj-space-2); }
+.checkin-legend .checkin-rules {
+  flex-basis: 100%;
+  justify-content: center;
+  padding-top: var(--jj-space-1);
+}
+.checkin-legend .dot { width: 10px; height: 10px; border-radius: var(--jj-radius-pill); }
+.checkin-legend .dot-signed { background: var(--jj-color-success); }
+.checkin-legend .dot-today { background: var(--jj-color-brand-rust); }

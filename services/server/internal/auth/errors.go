@@ -1,0 +1,30 @@
+package auth
+
+import "errors"
+
+var (
+	ErrInvalidAccountName      = errors.New("account name must be 4-20 ASCII letters, digits, or underscores")
+	ErrInvalidEmail            = errors.New("invalid email address")
+	ErrDisposableEmail         = errors.New("disposable email addresses are not allowed")
+	ErrEmailAlreadyRegistered  = errors.New("email is already registered")
+	ErrAccountNameTaken        = errors.New("account name is already taken")
+	ErrInvalidPassword         = errors.New("password must be 6-72 characters and include at least one letter and one digit")
+	ErrInvalidCredentials      = errors.New("invalid account name or password")
+	ErrInvalidRecoveryCode     = errors.New("invalid recovery code")
+	ErrInvalidToken            = errors.New("invalid session token")
+	ErrSessionRevoked          = errors.New("session revoked")
+	ErrSessionReplay           = errors.New("rotated session token replayed")
+	ErrAccountNotFound         = errors.New("account not found")
+	ErrConcurrentUpdate        = errors.New("authentication state changed concurrently")
+	ErrInvalidConfiguration    = errors.New("invalid authentication configuration")
+	ErrAdultConfirmation       = errors.New("adult confirmation is required")
+	ErrTurnstileVerification   = errors.New("human check failed")
+	ErrVerificationCode        = errors.New("invalid verification code")
+	ErrVerificationCodeUsed    = errors.New("verification code already used")
+	ErrVerificationCodeExpired = errors.New("verification code expired")
+	ErrVerificationCooldown    = errors.New("verification code cooldown")
+	ErrVerificationRateLimited = errors.New("email verification rate limited")
+	ErrEmailNotVerified        = errors.New("email is not verified")
+	ErrRegistrationBlocked     = errors.New("registration blocked")
+	ErrRegistrationNotAllowed  = errors.New("registration not allowed")
+)

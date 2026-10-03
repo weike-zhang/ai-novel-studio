@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run tokens:check
+      - run: npm run check:api-client
+      - run: npm run test:api-client
+      - run: npm run build:api-client
+      - run: npm run test:web
+      - run: npm run lint:web
+      - run: npm run build:web
+
+  server:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: novelstudio
+          MYSQL_ROOT_PASSWORD: local-ci-only
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -plocal-ci-only --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+      rabbitmq:
+        image: rabbitmq:4.1-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd="rabbitmq-diagnostics -q ping"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    defaults:
+      run:
+        working-directory: services/server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/server/go.mod
+          cache-dependency-path: services/server/go.sum
+      - run: go test ./...
+      - run: go run ./cmd/demo
+      - run: go run ./cmd/migrate up
+        env:
+          MYSQL_DSN: root:local-ci-only@tcp(127.0.0.1:3306)/novelstudio?parseTime=true&loc=UTC
+      - run: go test ./internal/turnjobs ./internal/worlddrafts ./internal/reports -run 'TestMySQL(TurnJob|WorldDraft|Report)Lifecycle' -v
+        env:
+          MYSQL_TEST_DSN: root:local-ci-only@tcp(127.0.0.1:3306)/novelstudio?parseTime=true&loc=UTC&time_zone=%27%2B00%3A00%27
+      - run: go test -p 1 ./internal/auth ./internal/messaging ./internal/worlds -v
+        env:
+          MYSQL_TEST_DSN: root:local-ci-only@tcp(127.0.0.1:3306)/novelstudio?parseTime=true&loc=UTC&time_zone=%27%2B00%3A00%27
+          REDIS_TEST_ADDR: 127.0.0.1:6379
+          RABBITMQ_TEST_URL: amqp://guest:guest@127.0.0.1:5672/
